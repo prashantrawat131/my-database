@@ -1,20 +1,13 @@
-#!/bin/bash
+# rm -r ./databases/*
 
-#Define cpp source and output file
-CPP_SOURCE="db.cpp"
-OUTPUT_FILE="db"
+g++ ./db.cpp -o a
+echo "Compiling complete"
 
-#Compiling
-g++ $CPP_SOURCCE -o $OUTPUT_FILE
+./a.exe put apple Keeps the doctor away.
 
-#Check if compilation was successful
-if [ $? -eq 0 ]; then
-    echo "Compilation successful"
-    #Run the output file
-    ./$OUTPUT_FILE
-else
-    echo "Compilation failed"
-fi
+./a.exe put guava It is also healthy.
 
-echo "Press any key to close..."
+echo "Data inserted successfully"
+
+echo "Press any key to continue"
 read -n1 -s
