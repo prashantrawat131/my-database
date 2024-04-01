@@ -2,30 +2,161 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <map>
 
 using namespace std;
 
-// Maximum number of entries in the db
-const size_t DB_FILE_SIZE = 10;
 const size_t KEY_SIZE = 30;
 const size_t VALUE_SIZE = 30;
 const size_t RECORD_SIZE = KEY_SIZE + VALUE_SIZE;
+const char NULL_RECORD[RECORD_SIZE] = {'\0'};
 
 class DB
 {
 private:
     fstream dbFile, indexFile;
-    size_t hashFunc(const string &);
+    // size_t hashFunc(const string &);
     bool fileExists(string);
+    map<string, streampos> index;
 
 public:
     DB(string);
     ~DB();
     int put(const vector<string> &);
-    int get(const vector<string> &);
+    int get(const vector<string> &, string &);
     int del(const vector<string> &);
     void printAll();
+    void printIndex();
 };
+
+DB::DB(string dbName) : dbFile(), index({})
+{
+    string dbFilePath = "./databases/" + dbName;
+    if (!fileExists(dbFilePath))
+    {
+        // just for file creation
+        dbFile.open(dbFilePath, ios::out);
+        dbFile.close();
+    }
+    dbFile.open(dbFilePath, ios::in | ios::out | ios::binary);
+}
+
+DB::~DB()
+{
+    dbFile.close();
+}
+
+bool DB::fileExists(string filePath)
+{
+    ifstream in(filePath);
+    return in.good();
+}
+
+/* size_t DB::hashFunc(const string &key)
+{
+    size_t hash = 0;
+    for (char c : key)
+    {
+        hash = hash * DB_FILE_SIZE + c;
+    }
+    return hash % DB_FILE_SIZE;
+} */
+
+int DB::put(const vector<string> &params)
+{
+    string key = params[0];
+
+    if (index[key] != NULL)
+    {
+        return 102;
+    }
+
+    string value = "";
+    for (int i = 1; i < params.size(); i++)
+    {
+        value += params[i];
+        if (i != params.size() - 1)
+        {
+            value += " ";
+        }
+    }
+
+    dbFile.seekp(0, ios::end);
+
+    key.append(KEY_SIZE - key.size(), '\0');
+    const char *keyData = key.data();
+    dbFile.write(keyData, key.size());
+
+    value.append(VALUE_SIZE - value.size(), '\0');
+    const char *valueData = value.data();
+    dbFile.write(valueData, value.size());
+
+    streampos pos = dbFile.tellp() - streampos(RECORD_SIZE);
+    index.insert({key, pos});
+
+    return 1;
+}
+
+int DB::get(const vector<string> &params, string &value)
+{
+    string requiredKey = params[0];
+
+    streampos pos = index[requiredKey];
+    if (pos != NULL)
+    {
+        cout << "Using index to find value\n";
+        dbFile.seekg(pos, ios::beg);
+    }
+    else
+    {
+        dbFile.seekg(0, ios::beg);
+    }
+
+    while (!dbFile.eof())
+    {
+        char *keyData = new char[KEY_SIZE];
+        dbFile.read(keyData, KEY_SIZE);
+
+        string currKey(keyData);
+        currKey = currKey.substr(0, currKey.find_first_of('\0'));
+        if (currKey == requiredKey)
+        {
+            char *valueData = new char[VALUE_SIZE];
+            dbFile.read(valueData, VALUE_SIZE);
+
+            value = string(valueData);
+            value = value.substr(0, value.find_first_of('\0'));
+
+            return 1;
+        }
+    }
+
+    return 101;
+}
+
+int DB::del(const vector<string> &params)
+{
+    string requiredKey = params[0];
+
+    dbFile.seekg(0, ios::beg);
+    while (!dbFile.eof())
+    {
+        char *keyData = new char[KEY_SIZE];
+        dbFile.read(keyData, KEY_SIZE);
+
+        string currKey(keyData);
+        currKey = currKey.substr(0, currKey.find_first_of('\0'));
+
+        if (currKey == requiredKey)
+        {
+            streampos pos = dbFile.tellg() - streampos(KEY_SIZE);
+            dbFile.seekp(static_cast<streampos>(pos));
+            dbFile.write(NULL_RECORD, RECORD_SIZE);
+            return 1;
+        }
+    }
+    return 101;
+}
 
 void DB::printAll()
 {
@@ -34,7 +165,7 @@ void DB::printAll()
     string key = "", value = "";
     char *keyData = new char[KEY_SIZE], *valueData = new char[VALUE_SIZE];
 
-    dbFile.seekg(ios::beg);
+    dbFile.seekg(0, ios::beg);
 
     while (!dbFile.eof())
     {
@@ -54,91 +185,13 @@ void DB::printAll()
     delete[] valueData;
 }
 
-DB::DB(string dbName)
+void DB::printIndex()
 {
-    string dbFilePath = "./databases/" + dbName;
-    if (!fileExists(dbFilePath))
+    cout << "Printing index\n";
+    for (const pair<string, streampos> &p : index)
     {
-        dbFile.open(dbFilePath, ios::out);
-        // for (int i = 0; i < DB_FILE_SIZE; i++)
-        // {
-        //     dbFile.put('\n');
-        // }
-        dbFile.close();
+        cout << "Key = " << p.first << " Value = " << p.second << endl;
     }
-    dbFile.open(dbFilePath, ios::in | ios::out | ios::binary | ios::app);
-}
-
-DB::~DB()
-{
-    dbFile.close();
-}
-
-bool DB::fileExists(string filePath)
-{
-    ifstream in(filePath);
-    return in.good();
-}
-
-size_t DB::hashFunc(const string &key)
-{
-    size_t hash = 0;
-    for (char c : key)
-    {
-        hash = hash * DB_FILE_SIZE + c;
-    }
-    return hash % DB_FILE_SIZE;
-}
-
-int DB::put(const vector<string> &params)
-{
-    string key = params[0];
-    string value = "";
-    for (int i = 1; i < params.size(); i++)
-    {
-        value += params[i];
-        if (i != params.size() - 1)
-        {
-            value += " ";
-        }
-    }
-
-    // dbFile.seekp(ios::end);
-
-    key.append(KEY_SIZE - key.size(), '\0');
-    const char *keyData = key.data();
-    dbFile.write(keyData, key.size());
-
-    value.append(VALUE_SIZE - value.size(), '\0');
-    const char *valueData = value.data();
-    dbFile.write(valueData, value.size());
-
-    /* size_t hash = hashFunc(key);
-    cout << "Hash is " << hash << endl;
-    string line;
-
-    dbFile.seekg(0, ios::beg);
-    for (int i = 0; i < hash; i++)
-    {
-        getline(dbFile, line);
-    }
-    streampos loc = dbFile.tellg();
-    dbFile.seekp(loc, ios::beg);
-    cout << "Loc: " << loc << endl;
-    dbFile << hash << ";"
-           << key << ";"
-           << value << "\n"; */
-    return 0;
-}
-
-int DB::get(const vector<string> &params)
-{
-    return 0;
-}
-
-int DB::del(const vector<string> &params)
-{
-    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -156,18 +209,63 @@ int main(int argc, char *argv[])
 
     if (command == "put")
     {
-        db.put(params);
+        int rc = db.put(params);
+        if (rc == 102)
+        {
+            cout << "Key already exists" << endl;
+        }
+        else if (rc == 1)
+        {
+            cout << "Key-Value pair inserted" << endl;
+        }
+        else
+        {
+            cout << "Unkown reason for error\n";
+        }
     }
     else if (command == "get")
     {
-        db.get(params);
+        string value = "";
+        int rc = db.get(params, value);
+        if (rc == 101)
+        {
+            cout << "Key not found" << endl;
+        }
+        else if (rc == 1)
+        {
+            cout << "Value: " << value << endl;
+        }
+        else
+        {
+            cout << "Unkown reason for error\n";
+        }
     }
     else if (command == "delete")
     {
-        db.del(params);
+        int rc = db.del(params);
+        if (rc == 101)
+        {
+            cout << "Key not found" << endl;
+        }
+        else if (rc == 1)
+        {
+            cout << "Key deleted" << endl;
+        }
+        else
+        {
+            cout << "Unkown reason for error\n";
+        }
+    }
+    else if (command == "printall")
+    {
+        db.printAll();
+    }
+    else if (command == "printindex")
+    {
+        db.printIndex();
     }
     else
     {
-        db.printAll();
+        cout << "Usage: db <command> <params>" << endl;
     }
 }
