@@ -1,6 +1,6 @@
-#include<iostream>
-#include<string>
-#include<vector>
+#include <iostream>
+#include <string>
+#include <vector>
 #include "../include/db.h"
 
 using namespace std;
@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    DB db("prashant123");
+    DB db("prashant123", 30, 100);
 
     string command = argv[1];
     vector<string> params(argv + 2, argv + argc);

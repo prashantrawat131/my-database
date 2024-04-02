@@ -1,0 +1,9 @@
+1. Checks for key size out of bound and value size out of bound.
+
+2. Call the rebuildIndex function in a seperate thread.
+
+3. Create function to rebuild the database. For example: to completely remove the deleted keys.
+
+4. Say database empty in the printall function and other fuctions when it is empty.
+
+5. Delete the entry from the index after it is deleted from the database.

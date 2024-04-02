@@ -1,4 +1,3 @@
-#pragma once
 #include "db.h"
 #include <iostream>
 #include <fstream>
@@ -8,7 +7,7 @@
 
 using namespace std;
 
-DB::DB(string dbName) : dbFile(), index({})
+DB::DB(string dbName, const int keySize, const int valueSize) : dbFile(), index({}), keyMaxSize(keySize), valueMaxSize(valueSize)
 {
     string dbFilePath = "./" + dbName;
     if (!fileExists(dbFilePath))
@@ -18,6 +17,12 @@ DB::DB(string dbName) : dbFile(), index({})
         dbFile.close();
     }
     dbFile.open(dbFilePath, ios::in | ios::out | ios::binary);
+    /*
+    The rebuildIndex function might take a long time when database grows larger.
+    It is better to call this function in a separate thread.
+    But for now let's call it when the database is created or opened some other time.
+    */
+    rebuildIndex();
 }
 
 DB::~DB()
@@ -30,16 +35,6 @@ bool DB::fileExists(string filePath)
     ifstream in(filePath);
     return in.good();
 }
-
-/* size_t DB::hashFunc(const string &key)
-{
-    size_t hash = 0;
-    for (char c : key)
-    {
-        hash = hash * DB_FILE_SIZE + c;
-    }
-    return hash % DB_FILE_SIZE;
-} */
 
 int DB::put(const vector<string> &params)
 {
@@ -62,16 +57,13 @@ int DB::put(const vector<string> &params)
 
     dbFile.seekp(0, ios::end);
 
-    key.append(KEY_SIZE - key.size(), '\0');
+    key.append(keyMaxSize - key.size(), '\0');
     const char *keyData = key.data();
     dbFile.write(keyData, key.size());
 
-    value.append(VALUE_SIZE - value.size(), '\0');
+    value.append(valueMaxSize - value.size(), '\0');
     const char *valueData = value.data();
     dbFile.write(valueData, value.size());
-
-    streampos pos = dbFile.tellp() - streampos(RECORD_SIZE);
-    index.insert({key, pos});
 
     return 1;
 }
@@ -79,36 +71,54 @@ int DB::put(const vector<string> &params)
 int DB::get(const vector<string> &params, string &value)
 {
     string requiredKey = params[0];
+    streampos pos = getKeyPos(requiredKey);
 
-    streampos pos = index[requiredKey];
-    if (pos != NULL)
-    {
-        cout << "Using index to find value\n";
-        dbFile.seekg(pos, ios::beg);
-    }
-    else
-    {
-        dbFile.seekg(0, ios::beg);
-    }
+    dbFile.seekg(pos, ios::beg);
 
-    while (!dbFile.eof())
-    {
-        char *keyData = new char[KEY_SIZE];
-        dbFile.read(keyData, KEY_SIZE);
+    char *keyData = new char[keyMaxSize];
+    char *valueData = new char[valueMaxSize];
 
-        string currKey(keyData);
-        currKey = currKey.substr(0, currKey.find_first_of('\0'));
-        if (currKey == requiredKey)
+    while (dbFile.read(keyData, keyMaxSize) && dbFile.read(valueData, valueMaxSize))
+    {
+        if (keyData == NULL || valueData == NULL)
         {
-            char *valueData = new char[VALUE_SIZE];
-            dbFile.read(valueData, VALUE_SIZE);
+            continue;
+        }
 
-            value = string(valueData);
+        string key(keyData);
+        key = key.substr(0, key.find_first_of('\0'));
+
+        if (key == requiredKey)
+        {
+            value.assign(valueData);
             value = value.substr(0, value.find_first_of('\0'));
-
             return 1;
         }
     }
+    /*
+        while (!dbFile.eof())
+        {
+            char *keyData = new char[keySize];
+            dbFile.read(keyData, keySize);
+
+            string currKey(keyData);
+            currKey = currKey.substr(0, currKey.find_first_of('\0'));
+
+            if (currKey == requiredKey)
+            {
+                char *valueData = new char[valueSize];
+                dbFile.read(valueData, valueSize);
+
+                value = string(valueData);
+                value = value.substr(0, value.find_first_of('\0'));
+
+                return 1;
+            }
+            else
+            {
+                dbFile.seekg(valueSize, ios::cur);
+            }
+        } */
 
     return 101;
 }
@@ -116,21 +126,27 @@ int DB::get(const vector<string> &params, string &value)
 int DB::del(const vector<string> &params)
 {
     string requiredKey = params[0];
-
-    dbFile.seekg(0, ios::beg);
+    streampos pos = getKeyPos(requiredKey);
+    dbFile.seekg(pos, ios::beg);
     while (!dbFile.eof())
     {
-        char *keyData = new char[KEY_SIZE];
-        dbFile.read(keyData, KEY_SIZE);
+        char *keyData = new char[keyMaxSize];
+        dbFile.read(keyData, keyMaxSize);
 
         string currKey(keyData);
         currKey = currKey.substr(0, currKey.find_first_of('\0'));
 
         if (currKey == requiredKey)
         {
-            streampos pos = dbFile.tellg() - streampos(KEY_SIZE);
+            streampos pos = dbFile.tellg() - streampos(keyMaxSize);
             dbFile.seekp(static_cast<streampos>(pos));
-            dbFile.write(NULL_RECORD, RECORD_SIZE);
+            const int recordSize(keyMaxSize + valueMaxSize);
+            char *nullData = new char[keyMaxSize + valueMaxSize];
+            for (int i = 0; i < recordSize; i++)
+            {
+                nullData[i] = '\0';
+            }
+            dbFile.write(nullData, recordSize);
             return 1;
         }
     }
@@ -142,16 +158,13 @@ void DB::printAll()
     cout << "Printing all the data\n";
 
     string key = "", value = "";
-    char *keyData = new char[KEY_SIZE], *valueData = new char[VALUE_SIZE];
+    char *keyData = new char[keyMaxSize], *valueData = new char[valueMaxSize];
 
     dbFile.seekg(0, ios::beg);
 
-    while (!dbFile.eof())
+    while (dbFile.read(keyData, keyMaxSize) && dbFile.read(valueData, valueMaxSize))
     {
-        dbFile.read(keyData, KEY_SIZE);
         key.assign(keyData);
-
-        dbFile.read(valueData, VALUE_SIZE);
         value.assign(valueData);
 
         key = key.substr(0, key.find_first_of('\0'));
@@ -169,6 +182,37 @@ void DB::printIndex()
     cout << "Printing index\n";
     for (const pair<string, streampos> &p : index)
     {
-        cout << "Key = " << p.first << " Value = " << p.second << endl;
+        cout << "Key = " << p.first << " Position = " << p.second << endl;
     }
+}
+
+streampos DB::getKeyPos(const string &key)
+{
+    streampos pos = index[key];
+    return pos == NULL ? streampos(0) : pos;
+}
+
+void DB::rebuildIndex()
+{
+    dbFile.seekg(0, ios::beg);
+    char *keyData = new char[keyMaxSize];
+    char *valueData = new char[valueMaxSize];
+
+    while (dbFile.read(keyData, keyMaxSize) && dbFile.read(valueData, valueMaxSize))
+    {
+        if (keyData != NULL)
+        {
+            string key(keyData);
+            key = key.substr(0, key.find_first_of('\0'));
+
+            streampos pos = dbFile.tellg() - streampos(keyMaxSize + valueMaxSize);
+            index.insert({key, pos});
+        }
+    }
+
+    delete[] keyData;
+    delete[] valueData;
+
+    dbFile.clear();
+    dbFile.seekg(0, ios::beg);
 }
