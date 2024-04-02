@@ -5,6 +5,8 @@
         "map": "cpp",
         "vector": "cpp",
         "xstring": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "iosfwd": "cpp",
+        "format": "cpp"
     }
 }

@@ -1,0 +1,3 @@
+C:/Users/prash/Projects/my-database/build/CMakeFiles/my-database.dir
+C:/Users/prash/Projects/my-database/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/prash/Projects/my-database/build/CMakeFiles/ZERO_CHECK.dir
