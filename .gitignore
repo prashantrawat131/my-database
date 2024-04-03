@@ -33,4 +33,4 @@
 
 # Database folder
 ./databases/
-./build/
+build/
