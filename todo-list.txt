@@ -1,9 +1,14 @@
-1. Checks for key size out of bound and value size out of bound.
+-> Call the rebuildIndex function in a seperate thread.
 
-2. Call the rebuildIndex function in a seperate thread.
+-> Create function to rebuild the database. For example: to completely remove the deleted keys.
 
-3. Create function to rebuild the database. For example: to completely remove the deleted keys.
+-> Say database empty in the printall function and other fuctions when it is empty.
 
-4. Say database empty in the printall function and other fuctions when it is empty.
+-> Delete the entry from the index after it is deleted from the database.
 
-5. Delete the entry from the index after it is deleted from the database.
+-> Create a different codes file for error and success code.
+
+-> Create a function to print db meta data.
+
+-> Check for duplicate key reinsertion and create another command names update which will override the previous key's value.
+But put will not override anything just return key already present when an attempt is made to reinsert a existing key.

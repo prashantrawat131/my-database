@@ -7,7 +7,7 @@
 
 using namespace std;
 
-DB::DB(string dbName, const int keySize, const int valueSize) : dbFile(), index({}), keyMaxSize(keySize), valueMaxSize(valueSize)
+DB::DB(string dbName, const int &keySize, const int &valueSize) : dbFile(), index({}), keyMaxSize(keySize), valueMaxSize(valueSize)
 {
     string dbFilePath = "./" + dbName;
     if (!fileExists(dbFilePath))
@@ -40,6 +40,11 @@ int DB::put(const vector<string> &params)
 {
     string key = params[0];
 
+    if (key.size() > keyMaxSize)
+    {
+        return 103;
+    }
+
     if (index[key] != NULL)
     {
         return 102;
@@ -53,6 +58,11 @@ int DB::put(const vector<string> &params)
         {
             value += " ";
         }
+    }
+
+    if (value.size() > valueMaxSize)
+    {
+        return 103;
     }
 
     dbFile.seekp(0, ios::end);
@@ -71,6 +81,11 @@ int DB::put(const vector<string> &params)
 int DB::get(const vector<string> &params, string &value)
 {
     string requiredKey = params[0];
+    if (requiredKey.size() > keyMaxSize)
+    {
+        return 103;
+    }
+
     streampos pos = getKeyPos(requiredKey);
 
     dbFile.seekg(pos, ios::beg);
@@ -95,30 +110,6 @@ int DB::get(const vector<string> &params, string &value)
             return 1;
         }
     }
-    /*
-        while (!dbFile.eof())
-        {
-            char *keyData = new char[keySize];
-            dbFile.read(keyData, keySize);
-
-            string currKey(keyData);
-            currKey = currKey.substr(0, currKey.find_first_of('\0'));
-
-            if (currKey == requiredKey)
-            {
-                char *valueData = new char[valueSize];
-                dbFile.read(valueData, valueSize);
-
-                value = string(valueData);
-                value = value.substr(0, value.find_first_of('\0'));
-
-                return 1;
-            }
-            else
-            {
-                dbFile.seekg(valueSize, ios::cur);
-            }
-        } */
 
     return 101;
 }
@@ -126,6 +117,12 @@ int DB::get(const vector<string> &params, string &value)
 int DB::del(const vector<string> &params)
 {
     string requiredKey = params[0];
+
+    if (requiredKey.size() > keyMaxSize)
+    {
+        return 103;
+    }
+
     streampos pos = getKeyPos(requiredKey);
     dbFile.seekg(pos, ios::beg);
     while (!dbFile.eof())
@@ -167,10 +164,20 @@ void DB::printAll()
         key.assign(keyData);
         value.assign(valueData);
 
-        key = key.substr(0, key.find_first_of('\0'));
-        value = value.substr(0, value.find_first_of('\0'));
+        // cout<<key.find_first_of('\0')<<endl;
 
-        cout << "Key = " << key << " Value = " << value << endl;
+        // if (key.find_first_of('\0') != string::npos)
+        // {
+        // cout<<"Parsing key\n";
+        key = key.substr(0, key.find_first_of('\0'));
+        // }
+
+        // if (value.find_first_of('\0') != string::npos)
+        // {
+        value = value.substr(0, value.find_first_of('\0'));
+        // }
+
+        cout << "Key = " << key << "\tValue = " << value << endl;
     }
 
     delete[] keyData;

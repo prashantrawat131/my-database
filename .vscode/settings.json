@@ -7,7 +7,8 @@
         "xstring": "cpp",
         "xtree": "cpp",
         "iosfwd": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "iostream": "cpp"
     },
     "cmake.sourceDirectory": "C:/Users/prash/Projects/my-database/src",
     "C_Cpp.default.compilerPath": "C:\\msys64\\ucrt64\\bin\\g++.exe"

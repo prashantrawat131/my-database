@@ -36,3 +36,4 @@ value2
 ### 101 to 200: Error Codes
 1. 101: Key not found
 2. 102: Key already present
+3. 103: Input size exceeded

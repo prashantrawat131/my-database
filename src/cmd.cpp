@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    DB db("prashant123", 30, 100);
+    DB db("prashant123", 5, 5);
 
     string command = argv[1];
     vector<string> params(argv + 2, argv + argc);
@@ -28,6 +28,10 @@ int main(int argc, char *argv[])
         else if (rc == 1)
         {
             cout << "Key-Value pair inserted" << endl;
+        }
+        else if (rc == 103)
+        {
+            cout << "Input size exceeded" << endl;
         }
         else
         {
@@ -46,6 +50,10 @@ int main(int argc, char *argv[])
         {
             cout << "Value: " << value << endl;
         }
+        else if (rc == 103)
+        {
+            cout << "Input size exceeded" << endl;
+        }
         else
         {
             cout << "Unkown reason for error\n";
@@ -61,6 +69,10 @@ int main(int argc, char *argv[])
         else if (rc == 1)
         {
             cout << "Key deleted" << endl;
+        }
+        else if (rc == 103)
+        {
+            cout << "Input size exceeded" << endl;
         }
         else
         {

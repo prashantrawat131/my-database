@@ -20,7 +20,7 @@ private:
     void rebuildIndex();
 
 public:
-    DB(string, const int, const int);
+    DB(string, const int&, const int&);
     ~DB();
     int put(const vector<string> &);
     int get(const vector<string> &, string &);
