@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "../include/db.h"
+#include<../include/codes.h>
 
 using namespace std;
 
@@ -13,23 +14,23 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    DB db("prashant123", 5, 5);
+    DB db("prashant123", 30, 30);
 
     string command = argv[1];
     vector<string> params(argv + 2, argv + argc);
 
     if (command == "put")
     {
-        int rc = db.put(params);
-        if (rc == 102)
+        int code = db.put(params);
+        if (code == KEY_ALREADY_PRESENT)
         {
             cout << "Key already exists" << endl;
         }
-        else if (rc == 1)
+        else if (code == SUCCESS)
         {
             cout << "Key-Value pair inserted" << endl;
         }
-        else if (rc == 103)
+        else if (code == INPUT_SIZE_EXCEEDED)
         {
             cout << "Input size exceeded" << endl;
         }
@@ -42,15 +43,15 @@ int main(int argc, char *argv[])
     {
         string value = "";
         int rc = db.get(params, value);
-        if (rc == 101)
+        if (rc == KEY_NOT_FOUND)
         {
             cout << "Key not found" << endl;
         }
-        else if (rc == 1)
+        else if (rc == SUCCESS)
         {
             cout << "Value: " << value << endl;
         }
-        else if (rc == 103)
+        else if (rc == INPUT_SIZE_EXCEEDED)
         {
             cout << "Input size exceeded" << endl;
         }
@@ -62,15 +63,15 @@ int main(int argc, char *argv[])
     else if (command == "delete")
     {
         int rc = db.del(params);
-        if (rc == 101)
+        if (rc == KEY_NOT_FOUND)
         {
             cout << "Key not found" << endl;
         }
-        else if (rc == 1)
+        else if (rc == SUCCESS)
         {
             cout << "Key deleted" << endl;
         }
-        else if (rc == 103)
+        else if (rc == INPUT_SIZE_EXCEEDED)
         {
             cout << "Input size exceeded" << endl;
         }
@@ -86,6 +87,22 @@ int main(int argc, char *argv[])
     else if (command == "printindex")
     {
         db.printIndex();
+    }
+    else if (command == "rebuilddb")
+    {
+        int rc = db.rebuildDatabase();
+        if (rc == SUCCESS)
+        {
+            cout << "Database rebuilt successfully\n";
+        }
+        else
+        {
+            cout << "Error in rebuilding database\n";
+        }
+    }
+    else if (command == "printdbmetadata")
+    {
+        db.printDbMetaData();
     }
     else
     {

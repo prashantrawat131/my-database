@@ -1,14 +1,31 @@
+---------------------------------------Todo list starts here---------------------------------------
+
 -> Call the rebuildIndex function in a seperate thread.
 
 -> Create function to rebuild the database. For example: to completely remove the deleted keys.
+
+-> Create a different codes file for error and success code.
+
+-> Check for duplicate key reinsertion and create another command names update which will override the previous key's value.
+But put will not override anything just return key already present when an attempt is made to reinsert a existing key.
+
+-> Use better method to check of unavailaibility of key in index.
+
+-> Check if in put method key or value is null or not.
+
+-> Add tests to the Project 
+
+-> Write seperate methods for parsing keys and values from char arrays.
+
+-> KEY_ALREADY_PRESENT not working properly.
+
+
+--------------------------------------------Done list starts here--------------------------------------
 
 -> Say database empty in the printall function and other fuctions when it is empty.
 
 -> Delete the entry from the index after it is deleted from the database.
 
--> Create a different codes file for error and success code.
-
 -> Create a function to print db meta data.
 
--> Check for duplicate key reinsertion and create another command names update which will override the previous key's value.
-But put will not override anything just return key already present when an attempt is made to reinsert a existing key.
+-> Use use #ifndef, #define, #endif instead of pragma once

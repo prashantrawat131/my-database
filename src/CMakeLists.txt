@@ -6,3 +6,6 @@ project(my-database VERSION 1.0.0)
 include_directories("${PROJECT_SOURCE_DIR}/../include/")
 
 add_executable(my-database cmd.cpp db.cpp)
+
+# Link the pthreads library
+target_link_libraries(my-database)

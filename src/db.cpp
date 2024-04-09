@@ -17,11 +17,7 @@ DB::DB(string dbName, const int &keySize, const int &valueSize) : dbFile(), inde
         dbFile.close();
     }
     dbFile.open(dbFilePath, ios::in | ios::out | ios::binary);
-    /*
-    The rebuildIndex function might take a long time when database grows larger.
-    It is better to call this function in a separate thread.
-    But for now let's call it when the database is created or opened some other time.
-    */
+
     rebuildIndex();
 }
 
@@ -38,16 +34,20 @@ bool DB::fileExists(string filePath)
 
 int DB::put(const vector<string> &params)
 {
+    /*
+    This function always appends at the end of the db file.
+     */
+
     string key = params[0];
 
     if (key.size() > keyMaxSize)
     {
-        return 103;
+        return INPUT_SIZE_EXCEEDED;
     }
 
     if (index[key] != NULL)
     {
-        return 102;
+        return KEY_ALREADY_PRESENT;
     }
 
     string value = "";
@@ -62,20 +62,20 @@ int DB::put(const vector<string> &params)
 
     if (value.size() > valueMaxSize)
     {
-        return 103;
+        return INPUT_SIZE_EXCEEDED;
     }
 
     dbFile.seekp(0, ios::end);
 
-    key.append(keyMaxSize - key.size(), '\0');
+    key.append(keyMaxSize - key.size(), NULL_CHAR);
     const char *keyData = key.data();
     dbFile.write(keyData, key.size());
 
-    value.append(valueMaxSize - value.size(), '\0');
+    value.append(valueMaxSize - value.size(), NULL_CHAR);
     const char *valueData = value.data();
     dbFile.write(valueData, value.size());
 
-    return 1;
+    return SUCCESS;
 }
 
 int DB::get(const vector<string> &params, string &value)
@@ -83,7 +83,7 @@ int DB::get(const vector<string> &params, string &value)
     string requiredKey = params[0];
     if (requiredKey.size() > keyMaxSize)
     {
-        return 103;
+        return INPUT_SIZE_EXCEEDED;
     }
 
     streampos pos = getKeyPos(requiredKey);
@@ -101,17 +101,17 @@ int DB::get(const vector<string> &params, string &value)
         }
 
         string key(keyData);
-        key = key.substr(0, key.find_first_of('\0'));
+        key = key.substr(0, key.find_first_of(NULL_CHAR));
 
         if (key == requiredKey)
         {
             value.assign(valueData);
-            value = value.substr(0, value.find_first_of('\0'));
-            return 1;
+            value = value.substr(0, value.find_first_of(NULL_CHAR));
+            return SUCCESS;
         }
     }
 
-    return 101;
+    return KEY_NOT_FOUND;
 }
 
 int DB::del(const vector<string> &params)
@@ -120,7 +120,7 @@ int DB::del(const vector<string> &params)
 
     if (requiredKey.size() > keyMaxSize)
     {
-        return 103;
+        return INPUT_SIZE_EXCEEDED;
     }
 
     streampos pos = getKeyPos(requiredKey);
@@ -131,7 +131,7 @@ int DB::del(const vector<string> &params)
         dbFile.read(keyData, keyMaxSize);
 
         string currKey(keyData);
-        currKey = currKey.substr(0, currKey.find_first_of('\0'));
+        currKey = currKey.substr(0, currKey.find_first_of(NULL_CHAR));
 
         if (currKey == requiredKey)
         {
@@ -141,18 +141,21 @@ int DB::del(const vector<string> &params)
             char *nullData = new char[keyMaxSize + valueMaxSize];
             for (int i = 0; i < recordSize; i++)
             {
-                nullData[i] = '\0';
+                nullData[i] = NULL_CHAR;
             }
             dbFile.write(nullData, recordSize);
-            return 1;
+            index.erase(requiredKey);
+            return SUCCESS;
         }
     }
-    return 101;
+    return KEY_NOT_FOUND;
 }
 
 void DB::printAll()
 {
-    cout << "Printing all the data\n";
+    bool isEmpty = true;
+
+    cout << "Printing all the data:\n--------------------------------\n";
 
     string key = "", value = "";
     char *keyData = new char[keyMaxSize], *valueData = new char[valueMaxSize];
@@ -164,21 +167,21 @@ void DB::printAll()
         key.assign(keyData);
         value.assign(valueData);
 
-        // cout<<key.find_first_of('\0')<<endl;
+        key = key.substr(0, key.find_first_of(NULL_CHAR));
+        value = value.substr(0, value.find_first_of(NULL_CHAR));
 
-        // if (key.find_first_of('\0') != string::npos)
-        // {
-        // cout<<"Parsing key\n";
-        key = key.substr(0, key.find_first_of('\0'));
-        // }
-
-        // if (value.find_first_of('\0') != string::npos)
-        // {
-        value = value.substr(0, value.find_first_of('\0'));
-        // }
-
-        cout << "Key = " << key << "\tValue = " << value << endl;
+        if (key != "" && value != "")
+        {
+            cout << "Key = " << key << " Value = " << value << endl;
+            isEmpty = false;
+        }
     }
+
+    if (isEmpty)
+    {
+        cout << "Database is empty\n";
+    }
+    cout << "--------------------------------\n";
 
     delete[] keyData;
     delete[] valueData;
@@ -210,7 +213,7 @@ void DB::rebuildIndex()
         if (keyData != NULL)
         {
             string key(keyData);
-            key = key.substr(0, key.find_first_of('\0'));
+            key = key.substr(0, key.find_first_of(NULL_CHAR));
 
             streampos pos = dbFile.tellg() - streampos(keyMaxSize + valueMaxSize);
             index.insert({key, pos});
@@ -222,4 +225,114 @@ void DB::rebuildIndex()
 
     dbFile.clear();
     dbFile.seekg(0, ios::beg);
+}
+
+int DB::rebuildDatabase()
+{
+    char *keyData = new char[keyMaxSize];
+    char *valueData = new char[valueMaxSize];
+
+    char *nextKeyData = new char[keyMaxSize];
+    char *nextValueData = new char[valueMaxSize];
+
+    char *nullData = new char[keyMaxSize + valueMaxSize];
+    for (int i = 0; i < keyMaxSize + valueMaxSize; i++)
+    {
+        nullData[i] = NULL_CHAR;
+    }
+
+    dbFile.seekg(0, ios::beg);
+
+    streampos leftPos = streampos(-1);
+
+    while (dbFile.peek() != EOF)
+    {
+        while (dbFile.read(keyData, keyMaxSize) && dbFile.read(valueData, valueMaxSize))
+        {
+            if (keyData[0] == NULL_CHAR && valueData[0] == NULL_CHAR && leftPos == streampos(-1))
+            {
+                leftPos = dbFile.tellg() - streampos(keyMaxSize + valueMaxSize);
+                break;
+            }
+        }
+
+        while (dbFile.read(nextKeyData, keyMaxSize) && dbFile.read(nextValueData, valueMaxSize))
+        {
+            if (nextKeyData[0] == NULL_CHAR && nextValueData[0] == NULL_CHAR)
+            {
+                continue;
+            }
+            else
+            {
+                /* cout << "LeftPos = " << leftPos << endl;
+                cout << "NextKey = " << nextKeyData << endl;
+                cout << "NextValue = " << nextValueData << endl; */
+
+                dbFile.seekp(leftPos, ios::beg);
+                dbFile.write(nextKeyData, keyMaxSize);
+                dbFile.write(nextValueData, valueMaxSize);
+
+                dbFile.seekp(dbFile.tellp() - streampos(keyMaxSize + valueMaxSize), ios::beg);
+                dbFile.write(nullData, keyMaxSize + valueMaxSize);
+
+                dbFile.seekg(leftPos + streampos(keyMaxSize + valueMaxSize), ios::beg);
+                leftPos = streampos(-1);
+
+                break;
+            }
+        }
+    }
+
+    dbFile.clear();
+
+    rebuildIndex();
+
+    delete[] keyData;
+    delete[] valueData;
+    delete[] nextKeyData;
+    delete[] nextValueData;
+    delete[] nullData;
+
+    return SUCCESS;
+}
+
+void DB::printDbMetaData()
+{
+    cout << "KeyMaxSize = " << keyMaxSize << " ValueMaxSize = " << valueMaxSize << endl;
+
+    cout << "Index size = " << index.size() << endl;
+
+    dbFile.seekg(0, ios::end);
+    long long int dbFileSize = dbFile.tellg();
+    if (dbFileSize > 1024)
+    {
+        cout << "DbFile size = " << dbFileSize / 1024 << " KB" << endl;
+    }
+    else
+    {
+        cout << "DbFile size = " << dbFileSize << " bytes" << endl;
+    }
+
+    cout << "Number of records = " << getNumberOfRecords() << endl;
+}
+
+long long int DB::getNumberOfRecords()
+{
+    dbFile.clear();
+    dbFile.seekg(0, ios::beg);
+    long long int dbFileRecords = 0;
+    char *keyData = new char[keyMaxSize];
+    char *valueData = new char[valueMaxSize];
+    while (dbFile.read(keyData, keyMaxSize) && dbFile.read(valueData, valueMaxSize))
+    {
+        if (keyData[0] != NULL_CHAR && valueData[0] != NULL_CHAR)
+        {
+            dbFileRecords++;
+        }
+    }
+
+    delete[] keyData;
+    delete[] valueData;
+
+    return dbFileRecords;
 }

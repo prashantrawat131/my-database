@@ -26,14 +26,5 @@ value2
 ...
 ```
 
-## Key points about database
-1. Every user has their own database file name according to their email id.
-
 ## Different Codes
-### 1 to 100: Success Codes
-1. 1: Success
-
-### 101 to 200: Error Codes
-1. 101: Key not found
-2. 102: Key already present
-3. 103: Input size exceeded
+Visit [this](./include/codes.h) file to see the different codes used in the project. They are self explanatory.
