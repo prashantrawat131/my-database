@@ -20,6 +20,8 @@ private:
     streampos getKeyPos(const string &key);
     const char NULL_CHAR = '\0';
     long long int getNumberOfRecords();
+    string parseKey(const char*);
+    string parseValue(const char*);
 
 public:
     DB(string, const int &, const int &);

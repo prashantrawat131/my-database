@@ -40,6 +40,11 @@ int DB::put(const vector<string> &params)
 
     string key = params[0];
 
+    if (key == "")
+    {
+        return INVALID_INPUT;
+    }
+
     if (key.size() > keyMaxSize)
     {
         return INPUT_SIZE_EXCEEDED;
@@ -58,6 +63,10 @@ int DB::put(const vector<string> &params)
         {
             value += " ";
         }
+    }
+    if (value == "")
+    {
+        return INVALID_INPUT;
     }
 
     if (value.size() > valueMaxSize)
@@ -100,16 +109,17 @@ int DB::get(const vector<string> &params, string &value)
             continue;
         }
 
-        string key(keyData);
-        key = key.substr(0, key.find_first_of(NULL_CHAR));
+        string key = parseKey(keyData);
 
         if (key == requiredKey)
         {
-            value.assign(valueData);
-            value = value.substr(0, value.find_first_of(NULL_CHAR));
+            value = parseValue(valueData);
             return SUCCESS;
         }
     }
+
+    delete[] keyData;
+    delete[] valueData;
 
     return KEY_NOT_FOUND;
 }
@@ -130,8 +140,7 @@ int DB::del(const vector<string> &params)
         char *keyData = new char[keyMaxSize];
         dbFile.read(keyData, keyMaxSize);
 
-        string currKey(keyData);
-        currKey = currKey.substr(0, currKey.find_first_of(NULL_CHAR));
+        string currKey = parseKey(keyData);
 
         if (currKey == requiredKey)
         {
@@ -164,11 +173,8 @@ void DB::printAll()
 
     while (dbFile.read(keyData, keyMaxSize) && dbFile.read(valueData, valueMaxSize))
     {
-        key.assign(keyData);
-        value.assign(valueData);
-
-        key = key.substr(0, key.find_first_of(NULL_CHAR));
-        value = value.substr(0, value.find_first_of(NULL_CHAR));
+        key = parseKey(keyData);
+        value = parseValue(valueData);
 
         if (key != "" && value != "")
         {
@@ -198,10 +204,11 @@ void DB::printIndex()
 
 streampos DB::getKeyPos(const string &key)
 {
-    if(index.find(key) != index.end()){
+    if (index.find(key) != index.end())
+    {
         return index[key];
     }
-    
+
     return streampos(0);
 }
 
@@ -215,8 +222,7 @@ void DB::rebuildIndex()
     {
         if (keyData != NULL)
         {
-            string key(keyData);
-            key = key.substr(0, key.find_first_of(NULL_CHAR));
+            string key = parseKey(keyData);
 
             streampos pos = dbFile.tellg() - streampos(keyMaxSize + valueMaxSize);
             index.insert({key, pos});
@@ -338,4 +344,16 @@ long long int DB::getNumberOfRecords()
     delete[] valueData;
 
     return dbFileRecords;
+}
+
+string DB::parseKey(const char *data)
+{
+    string key(data);
+    return key.substr(0, key.find_first_of(NULL_CHAR));
+}
+
+string DB::parseValue(const char *data)
+{
+    string value(data);
+    return value.substr(0, value.find_first_of(NULL_CHAR));
 }

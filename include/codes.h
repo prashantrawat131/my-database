@@ -8,5 +8,6 @@ const int SUCCESS = 1;
 const int KEY_NOT_FOUND = 101;
 const int KEY_ALREADY_PRESENT = 102;
 const int INPUT_SIZE_EXCEEDED = 103;
+const int INVALID_INPUT = 104;
 
 #endif 

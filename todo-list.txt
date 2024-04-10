@@ -9,23 +9,10 @@ But put will not override anything just return key already present when an attem
 
 -> Check if in put method key or value is null or not.
 
--> Write seperate methods for parsing keys and values from char arrays.
-
 -> KEY_ALREADY_PRESENT not working properly.
 
+-> Remove the params part from db.cpp and directly pass the key and value as string. Leave the params part to cmd.cpp
 
 --------------------------------------------Done list starts here--------------------------------------
 
--> Say database empty in the printall function and other fuctions when it is empty.
-
--> Delete the entry from the index after it is deleted from the database.
-
--> Create a function to print db meta data.
-
--> Use use #ifndef, #define, #endif instead of pragma once
-
--> Create a different codes file for error and success code.
-
--> Use better method to check of unavailaibility of key in index.
-
--> Add tests to the Project 
+-> Write seperate methods for parsing keys and values from char arrays.
