@@ -20,15 +20,15 @@ private:
     streampos getKeyPos(const string &key);
     const char NULL_CHAR = '\0';
     long long int getNumberOfRecords();
-    string parseKey(const char*);
-    string parseValue(const char*);
+    string parseKey(const char *);
+    string parseValue(const char *);
 
 public:
     DB(string, const int &, const int &);
     ~DB();
-    int put(const vector<string> &);
-    int get(const vector<string> &, string &);
-    int del(const vector<string> &);
+    int put(string, string);
+    int get(const string &, string &);
+    int del(const string &);
     void printAll();
     void printIndex();
     void rebuildIndex();

@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include "../include/db.h"
-#include<../include/codes.h>
+#include <../include/codes.h>
 
 using namespace std;
 
@@ -21,7 +21,16 @@ int main(int argc, char *argv[])
 
     if (command == "put")
     {
-        int code = db.put(params);
+        string value = "";
+        for (int i = 1; i < params.size(); i++)
+        {
+            value += params[i];
+            if (i != params.size() - 1)
+            {
+                value += " ";
+            }
+        }
+        int code = db.put(params[0], value);
         if (code == KEY_ALREADY_PRESENT)
         {
             cout << "Key already exists" << endl;
@@ -42,7 +51,7 @@ int main(int argc, char *argv[])
     else if (command == "get")
     {
         string value = "";
-        int rc = db.get(params, value);
+        int rc = db.get(params[0], value);
         if (rc == KEY_NOT_FOUND)
         {
             cout << "Key not found" << endl;
@@ -62,7 +71,7 @@ int main(int argc, char *argv[])
     }
     else if (command == "delete")
     {
-        int rc = db.del(params);
+        int rc = db.del(params[0]);
         if (rc == KEY_NOT_FOUND)
         {
             cout << "Key not found" << endl;

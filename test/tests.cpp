@@ -17,19 +17,19 @@ TEST(DB, BasicTests)
     string value = "";
 
     params = {"", "this is one"};
-    EXPECT_EQ(db.put(params), INVALID_INPUT);
+    EXPECT_EQ(db.put(params[0], params[1]), INVALID_INPUT);
 
     params = {"one", ""};
-    EXPECT_EQ(db.put(params), INVALID_INPUT);
+    EXPECT_EQ(db.put(params[0], params[1]), INVALID_INPUT);
 
     params = {"one", "this is one"};
-    EXPECT_EQ(db.put(params), SUCCESS);
+    EXPECT_EQ(db.put(params[0], params[1]), SUCCESS);
 
     db.get({params[0]}, value);
     EXPECT_EQ(value, params[1]);
 
     params = {"two", "this is two"};
-    EXPECT_EQ(db.put(params), SUCCESS);
+    EXPECT_EQ(db.put(params[0], params[1]), SUCCESS);
     // EXPECT_EQ(db.put(params), KEY_ALREADY_PRESENT);
     db.get({params[0]}, value);
     EXPECT_EQ(value, params[1]);

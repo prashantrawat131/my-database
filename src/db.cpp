@@ -32,20 +32,18 @@ bool DB::fileExists(string filePath)
     return in.good();
 }
 
-int DB::put(const vector<string> &params)
+int DB::put(string key,string value)
 {
     /*
     This function always appends at the end of the db file.
      */
 
-    string key = params[0];
-
-    if (key == "")
+    if (key == "" || value == "")
     {
         return INVALID_INPUT;
     }
 
-    if (key.size() > keyMaxSize)
+    if (key.size() > keyMaxSize || value.size() > valueMaxSize)
     {
         return INPUT_SIZE_EXCEEDED;
     }
@@ -53,25 +51,6 @@ int DB::put(const vector<string> &params)
     if (index.find(key) != index.end())
     {
         return KEY_ALREADY_PRESENT;
-    }
-
-    string value = "";
-    for (int i = 1; i < params.size(); i++)
-    {
-        value += params[i];
-        if (i != params.size() - 1)
-        {
-            value += " ";
-        }
-    }
-    if (value == "")
-    {
-        return INVALID_INPUT;
-    }
-
-    if (value.size() > valueMaxSize)
-    {
-        return INPUT_SIZE_EXCEEDED;
     }
 
     dbFile.seekp(0, ios::end);
@@ -87,9 +66,8 @@ int DB::put(const vector<string> &params)
     return SUCCESS;
 }
 
-int DB::get(const vector<string> &params, string &value)
+int DB::get(const string& requiredKey,string &value)
 {
-    string requiredKey = params[0];
     if (requiredKey.size() > keyMaxSize)
     {
         return INPUT_SIZE_EXCEEDED;
@@ -124,10 +102,8 @@ int DB::get(const vector<string> &params, string &value)
     return KEY_NOT_FOUND;
 }
 
-int DB::del(const vector<string> &params)
+int DB::del(const string &requiredKey)
 {
-    string requiredKey = params[0];
-
     if (requiredKey.size() > keyMaxSize)
     {
         return INPUT_SIZE_EXCEEDED;
