@@ -4,16 +4,10 @@
 
 -> Create function to rebuild the database. For example: to completely remove the deleted keys.
 
--> Create a different codes file for error and success code.
-
 -> Check for duplicate key reinsertion and create another command names update which will override the previous key's value.
 But put will not override anything just return key already present when an attempt is made to reinsert a existing key.
 
--> Use better method to check of unavailaibility of key in index.
-
 -> Check if in put method key or value is null or not.
-
--> Add tests to the Project 
 
 -> Write seperate methods for parsing keys and values from char arrays.
 
@@ -29,3 +23,9 @@ But put will not override anything just return key already present when an attem
 -> Create a function to print db meta data.
 
 -> Use use #ifndef, #define, #endif instead of pragma once
+
+-> Create a different codes file for error and success code.
+
+-> Use better method to check of unavailaibility of key in index.
+
+-> Add tests to the Project 

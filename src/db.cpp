@@ -45,7 +45,7 @@ int DB::put(const vector<string> &params)
         return INPUT_SIZE_EXCEEDED;
     }
 
-    if (index[key] != NULL)
+    if (index.find(key) != index.end())
     {
         return KEY_ALREADY_PRESENT;
     }
@@ -198,8 +198,11 @@ void DB::printIndex()
 
 streampos DB::getKeyPos(const string &key)
 {
-    streampos pos = index[key];
-    return pos == NULL ? streampos(0) : pos;
+    if(index.find(key) != index.end()){
+        return index[key];
+    }
+    
+    return streampos(0);
 }
 
 void DB::rebuildIndex()
